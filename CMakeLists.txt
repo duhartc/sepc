@@ -15,7 +15,7 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -Werror -std=gnu99")
 # et le numéro de la variante que vous avez choisie
 #########
 set(VARIANTE_LOGINS duhartc girerda)
-set(VARIANTE_SUJET -1)
+set(VARIANTE_SUJET 1)
 ###
 
 list(SORT VARIANTE_LOGINS)
