@@ -136,7 +136,11 @@ mem_alloc(unsigned long size)
 
 bool buddy(void *ptr1, void * ptr2, unsigned int index) {
     // retourne true si ptr1 et ptr2 sont des voisins
-	unsigned long size = (unsigned long) 1<<(index-1);
+	unsigned long size;
+	if (index==0)
+		size = 1;
+	else 
+		size = (unsigned long) 1<<(index-1);
 
 	return (ptr1 == ((ptr2-zone_memoire)^size)+zone_memoire);
 }
@@ -179,9 +183,14 @@ void merge_zone(unsigned int index, void *ptr) {
         if (merge) merge_zone(index+1, debut_zone);
 	else {
 		zl * zone = tzl[index];
-		tzl[index] = ptr;
+		tzl[index] = (zl*)ptr;
+		printf("%i",index);
+		fflush(stdout);
 		tzl[index]->zone = ptr;
+		printf("OK");
+		fflush(stdout);
 		tzl[index]->next = zone;
+	       
 	}
     }
 }
@@ -189,7 +198,7 @@ void merge_zone(unsigned int index, void *ptr) {
 int 
 mem_free(void *ptr, unsigned long size)
 {
-	if (ptr < zone_memoire) {
+	if (ptr < zone_memoire || size > ALLOC_MEM_SIZE || ptr > zone_memoire+ ALLOC_MEM_SIZE) {
 		//on essaie de libèrer une zone qui n'est pas dans la zone mémoire
 		return -1;
 	}
@@ -220,6 +229,11 @@ mem_free(void *ptr, unsigned long size)
 		// on ajoute directement la zone libre
 		tzl[size_index] = ptr;
 		tzl[size_index]->zone = ptr;
+		tzl[size_index]->next = NULL;
+	}
+	else if (size_index == BUDDY_MAX_INDEX) {
+		tzl[size_index] = zone_memoire;
+		tzl[size_index]->zone = zone_memoire;
 		tzl[size_index]->next = NULL;
 	}
 	else {
