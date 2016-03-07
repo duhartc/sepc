@@ -22,6 +22,20 @@ struct zone_libre {
 };
 zl *tzl[BUDDY_MAX_INDEX + 1]; //tableau de pointeurs vers des zones libres
 
+
+void print_tzl(){
+	for (int i=0; i<=BUDDY_MAX_INDEX; i++){
+		printf("%i :  ",i);
+		zl *cour=tzl[i];
+		while (cour != NULL) {
+			printf("%p, ",cour->zone);
+			cour=cour->next;
+		}
+		printf("\n");
+	}
+
+}
+
 int 
 mem_init()
 {
@@ -67,6 +81,8 @@ void * divide_zone(unsigned int index, unsigned int first_index) {
         void * zone = tzl[first_index]->zone;
         // on retire l'ex-zone libre de la tzl
         tzl[first_index] = tzl[first_index]->next;
+	//print_tzl();
+	//printf("Fin alloc %p\n", zone);
         return zone;
     }
     unsigned int index_new_zl = first_index - 1;
@@ -74,20 +90,23 @@ void * divide_zone(unsigned int index, unsigned int first_index) {
     void * cut_zone = (void *)((unsigned long)tzl[first_index]->zone 
                                +((unsigned long) 1 << (index_new_zl)));
 
+
     // on insère en tête dans la liste
     tzl[index_new_zl] = cut_zone;
     tzl[index_new_zl]->zone = cut_zone;
     // si on crée la zone, c'est qu'il n'y en avait pas avant 
-    tzl[index_new_zl]->next = NULL;  
+    tzl[index_new_zl]->next = NULL;
 
-    /* //On insère le buddy en tête */
-    /* tzl[index_new_zl] = tzl[first_index]; */
-    /* tzl[index_new_zl]->zone = tzl[first_index]->zone; */
-    /* tzl[index_new_zl]->next = cut_zone; */
 
-    /* //On retire de la tzl la zone coupée */
-    /* tzl[first_index] = tzl[first_index]->next; */
+    //On retire de la tzl la zone coupée
+    zl *suiv = tzl[first_index]->next;
 
+    //On insère le buddy en tête
+    tzl[index_new_zl] = tzl[first_index];
+    tzl[index_new_zl]->zone = tzl[first_index]->zone;
+    tzl[index_new_zl]->next = cut_zone;
+
+    tzl[first_index] = suiv;
     return divide_zone(index, index_new_zl);
 }
 unsigned int tzl_index(unsigned long size) {
@@ -124,8 +143,9 @@ mem_alloc(unsigned long size)
     if (zone_memoire == 0 || size == 0){
         return (void *)0;
     }
-    
     unsigned int size_index = tzl_index(size);
+    //printf("Allocation de taille %i \n",size_index);
+    //print_tzl();
     
     // si la taille demandée est trop grande
     unsigned int first_index = 0; //premier index possible disponible
@@ -138,6 +158,8 @@ mem_alloc(unsigned long size)
         void * zone = tzl[size_index]->zone;
         // on retire l'ex-zone libre de la tzl
         tzl[size_index] = tzl[size_index]->next;
+	//print_tzl();
+	//printf("Fin alloc\n");
         return zone;
     }
     // si on doit diviser une zone libre
@@ -246,4 +268,3 @@ mem_destroy()
   zone_memoire = 0;
   return 0;
 }
-
