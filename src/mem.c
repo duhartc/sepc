@@ -184,7 +184,7 @@ mem_free(void *ptr, unsigned long size)
         tzl[size_index]->next = NULL;
     }
     else {
-        // sinon on fusionne le bloc libèré avec son compagnon
+        // sinon on fusionne le bloc libèré avec son compagnon (si disponible)
         merge_zone(size_index, ptr);
     }   
     return 0;
