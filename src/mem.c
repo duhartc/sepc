@@ -82,15 +82,7 @@ void * divide_zone(unsigned int index, unsigned int first_index) {
 
     return divide_zone(index, index_new_zl);
 }
-
-void *
-mem_alloc(unsigned long size)
-{
-  /*  ecrire votre code ici */
-    // si on n'a pas alloué la mémoire
-    if (zone_memoire == 0 || size == 0){
-        return NULL;
-    }
+unsigned int tzl_index(unsigned long size) {
     unsigned int size_index = 0;
     if (size==ALLOC_MEM_SIZE) {
         size_index = BUDDY_MAX_INDEX;
@@ -109,11 +101,23 @@ mem_alloc(unsigned long size)
             size_index++;
         }
     }
+    return size_index;
+}
+
+void *
+mem_alloc(unsigned long size)
+{
+  /*  ecrire votre code ici */
+    // si on n'a pas alloué la mémoire
+    if (zone_memoire == 0 || size == 0){
+        return (void *)0;
+    }
+    unsigned int size_index = tzl_index(size);
     
     // si la taille demandée est trop grande
     unsigned int first_index = 0; //premier index possible disponible
     if (!available_size(size_index, &first_index)){
-        return NULL;
+        return (void *)0;
     }
     // si on a une zone de la bonne taille disponible
     if (tzl[size_index] != NULL) {
@@ -129,11 +133,30 @@ mem_alloc(unsigned long size)
   return 0;  
 }
 
+void merge_zone(unsigned int index, void *ptr) {
+}
+
 int 
 mem_free(void *ptr, unsigned long size)
 {
   /* ecrire votre code ici */
-  return 0;
+    if (ptr < zone_memoire) {
+        //on essaie de libèrer une zone qui n'est pas dans la zone mémoire
+        return -1;
+    }
+    unsigned int size_index = tzl_index(size);
+    if (tzl[size_index] == NULL) {
+        // si auncune zone libre de la taille souhaitée n'est disponible
+        // on ajoute directement la zone libre
+        tzl[size_index] = ptr;
+        tzl[size_index]->zone = ptr;
+        tzl[size_index]->next = NULL;
+    }
+    else {
+        // sinon on fusionne le bloc libèré avec son compagnon
+        merge_zone(size_index, ptr);
+    }   
+    return 0;
 }
 
 
