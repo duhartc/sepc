@@ -46,10 +46,11 @@ mem_init()
 }
 
 bool available_size(unsigned int index, unsigned int *first_index ) {
-    if (index > BUDDY_MAX_INDEX + 1) {
+    if (index > BUDDY_MAX_INDEX) {
         return false;
     }
     for (unsigned int i = index; i < BUDDY_MAX_INDEX + 1; i++) {
+    
         if (tzl[i]!= NULL) {
             // si on trouve une zone libre de taille supérieure disponible
             *first_index = i;
@@ -62,10 +63,10 @@ bool available_size(unsigned int index, unsigned int *first_index ) {
 void * divide_zone(unsigned int index, unsigned int first_index) {
     // index est la puissance correspondant à la taille que l'on souhaite allouer
     // first_index le premier index disponible pouvant la contenir   
-    if (index>=first_index) {            
+    if (index==first_index) {            
         void * zone = tzl[first_index]->zone;
         // on retire l'ex-zone libre de la tzl
-        //tzl[first_index] = tzl[first_index]->next;
+        tzl[first_index] = tzl[first_index]->next;
         return zone;
     }
     unsigned int index_new_zl = first_index - 1;
@@ -73,13 +74,35 @@ void * divide_zone(unsigned int index, unsigned int first_index) {
     void * cut_zone = (void *)((unsigned long)tzl[first_index]->zone 
                                +((unsigned long) 1 << (index_new_zl)));
 
-    // on insère en tête
+    // on insère en tête dans la liste
     tzl[index_new_zl] = cut_zone;
     tzl[index_new_zl]->zone = cut_zone;
     // si on crée la zone, c'est qu'il n'y en avait pas avant 
     tzl[index_new_zl]->next = NULL;  
 
     return divide_zone(index, index_new_zl);
+}
+unsigned int tzl_index(unsigned long size) {
+    unsigned int size_index = 0;
+    if (size==ALLOC_MEM_SIZE) {
+        size_index = BUDDY_MAX_INDEX;
+    }
+    else {
+	    unsigned long size_temp = size;
+        while (size != 0) {
+            // on cherche l'indice correspondant dans la tzl donc
+            // on cherche le k le plus grand possible tel que size = 2^k + reste)
+            size = size >> 1;
+            size_index++;
+        }
+        size_index--;
+        // si la taille n'est pas une puissance de 2 (reste != 0)
+        // on la stocke dans un bloc de puissance de 2 supérieure 
+        if (size_temp > ((unsigned long) 1 << size_index)) {
+            size_index++;
+        }
+    }
+    return size_index;
 }
 
 void *
@@ -88,25 +111,14 @@ mem_alloc(unsigned long size)
   /*  ecrire votre code ici */
     // si on n'a pas alloué la mémoire
     if (zone_memoire == 0 || size == 0){
-        return NULL;
+        return (void *)0;
     }
-    unsigned int size_index = 0;
-    while (size != 0) {
-        // on cherche l'indice correspondant dans la tzl donc
-        // on cherche le k le plus grand possible tel que size = 2^k + reste)
-        size = size >> 1;
-        size_index++;
-    }
-    // si la taille n'est pas une puissance de 2 (reste != 0)
-    // on la stocke dans un bloc de puissance de 2 supérieure 
-    if (size > ((unsigned long) 1 << size_index)) {
-        size_index++;
-    }
+    unsigned int size_index = tzl_index(size);
     
     // si la taille demandée est trop grande
     unsigned int first_index = 0; //premier index possible disponible
     if (!available_size(size_index, &first_index)){
-        return NULL;
+        return (void *)0;
     }
     // si on a une zone de la bonne taille disponible
     if (tzl[size_index] != NULL) {
@@ -122,34 +134,99 @@ mem_alloc(unsigned long size)
   return 0;  
 }
 
+bool buddy(void *ptr1, void * ptr2, unsigned int index) {
+    // retourne true si ptr1 et ptr2 sont des voisins
+	unsigned long size = (unsigned long) 1<<(index-1);
+
+	return (ptr1 == ((ptr2-zone_memoire)^size)+zone_memoire);
+}
+
+void merge_zone(unsigned int index, void *ptr) {
+    if (tzl[index] == NULL) {
+        // si auncune zone libre de la taille souhaitée n'est disponible
+        // on ajoute directement la zone libre
+        tzl[index] = ptr;
+        tzl[index]->zone = ptr;
+        tzl[index]->next = NULL;
+    }
+    else {
+        // sinon on essaie de créer une zone libre plus grande
+        zl *cour = tzl[index];
+	zl *prec = NULL;
+        bool merge = false;
+	void *debut_zone = ptr;
+        while (cour != NULL) {
+		if (buddy(cour, ptr, index)) {
+                // si une des zones disponibles est un voisin
+			if (prec == NULL) {
+				tzl[index] = cour->next;
+			} else {
+				prec->next = cour->next;
+			}
+
+			if (cour < (zl*)ptr)
+				debut_zone=cour;
+
+			merge = true;
+			break;
+            }
+	    prec = cour;
+            cour = cour->next;
+        }
+
+        // si on a trouvé un voisin
+        // on essaie de fusionner la nouvelle zone constituée des 2 voisins
+        if (merge) merge_zone(index+1, debut_zone);
+	else {
+		zl * zone = tzl[index];
+		tzl[index] = ptr;
+		tzl[index]->zone = ptr;
+		tzl[index]->next = zone;
+	}
+    }
+}
+
 int 
 mem_free(void *ptr, unsigned long size)
 {
-  /* ecrire votre code ici */
+	if (ptr < zone_memoire) {
+		//on essaie de libèrer une zone qui n'est pas dans la zone mémoire
+		return -1;
+	}
+	/* ecrire votre code ici */
 	//size_index est l'index correspondant à la taille à libérer
-	unsigned int size_index = 0;
-	while (size != 0) {
-		size = size >> 1;
-		size_index++;
+	unsigned int size_index = tzl_index(size);
+
+
+        /* //Recherche du compagnon et de son état */
+	/* void * buddy = ((ptr-zone_memoire)^size)+zone_memoire; */
+	
+	/* bool free_buddy = false; */
+	/* zl *cour = tzl[size_index]; */
+	/* while (cour != NULL && !free_buddy) { */
+	/* 	if (cour->zone == buddy) */
+	/* 		free_buddy = true; */
+
+	/* 	cour = cour->next; */
+	/* } */
+
+	/* //Si le compagnon est libre: on les regroupe dans un bloc à size_index+1 */
+	/* if (tzl[size_index+1] == NULL) { */
+	/* 	tzl[size_index+1]=ptr; */
+	/* } */
+
+	if (tzl[size_index] == NULL) {
+		// si auncune zone libre de la taille souhaitée n'est disponible
+		// on ajoute directement la zone libre
+		tzl[size_index] = ptr;
+		tzl[size_index]->zone = ptr;
+		tzl[size_index]->next = NULL;
 	}
-
-        //Recherche du compagnon et de son état
-	void * buddy = ((ptr-zone_memoire)^size)+zone_memoire;
-	
-	bool free_buddy = false;
-	zl *cour = tzl[size_index];
-	while (cour != NULL && !free_buddy) {
-		if (cour->zone = buddy)
-			free_buddy = true;
-
-		cour = cour->next;
-	}
-
-	//Si le compagnon est libre: on les regroupe dans un bloc à size_index+1
-	
-	
-	
-  return 0;
+	else {
+		// sinon on fusionne le bloc libèré avec son compagnon
+		merge_zone(size_index, ptr);
+	}   
+	return 0;
 }
 
 
