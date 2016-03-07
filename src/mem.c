@@ -83,6 +83,7 @@ void * divide_zone(unsigned int index, unsigned int first_index) {
         tzl[first_index] = tzl[first_index]->next;
 	//print_tzl();
 	//printf("Fin alloc %p\n", zone);
+	//print_tzl();
         return zone;
     }
     unsigned int index_new_zl = first_index - 1;
@@ -175,7 +176,7 @@ bool buddy(void *ptr1, void * ptr2, unsigned int index) {
 	if (index==0)
 		size = 1;
 	else 
-		size = (unsigned long) 1<<(index-1);
+		size = (unsigned long) 1<<(index);
 
 	return (ptr1 == ((ptr2-zone_memoire)^size)+zone_memoire);
 }
@@ -202,7 +203,7 @@ void merge_zone(unsigned int index, void *ptr) {
 			} else {
 				prec->next = cour->next;
 			}
-
+			
 			if (cour < (zl*)ptr)
 				debut_zone=cour;
 
@@ -219,9 +220,7 @@ void merge_zone(unsigned int index, void *ptr) {
 	else {
 		zl * zone = tzl[index];
 		tzl[index] = (zl*)ptr;
-		fflush(stdout);
 		tzl[index]->zone = ptr;
-		fflush(stdout);
 		tzl[index]->next = zone->next;
 	       
 	}
@@ -255,6 +254,7 @@ mem_free(void *ptr, unsigned long size)
 		// sinon on fusionne le bloc libèré avec son compagnon
 		merge_zone(size_index, ptr);
 	}   
+	//print_tzl();
 	return 0;
 }
 
