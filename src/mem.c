@@ -62,7 +62,7 @@ bool available_size(unsigned int index, unsigned int *first_index ) {
 
 void * divide_zone(unsigned int index, unsigned int first_index) {
     // index est la puissance correspondant à la taille que l'on souhaite allouer
-    // first_index le premier index disponible pouvant la contenir   
+    // first_index le premier index disponible pouvant la contenir
     if (index==first_index) {            
         void * zone = tzl[first_index]->zone;
         // on retire l'ex-zone libre de la tzl
@@ -80,6 +80,14 @@ void * divide_zone(unsigned int index, unsigned int first_index) {
     // si on crée la zone, c'est qu'il n'y en avait pas avant 
     tzl[index_new_zl]->next = NULL;  
 
+    /* //On insère le buddy en tête */
+    /* tzl[index_new_zl] = tzl[first_index]; */
+    /* tzl[index_new_zl]->zone = tzl[first_index]->zone; */
+    /* tzl[index_new_zl]->next = cut_zone; */
+
+    /* //On retire de la tzl la zone coupée */
+    /* tzl[first_index] = tzl[first_index]->next; */
+
     return divide_zone(index, index_new_zl);
 }
 unsigned int tzl_index(unsigned long size) {
@@ -88,6 +96,9 @@ unsigned int tzl_index(unsigned long size) {
         size_index = BUDDY_MAX_INDEX;
     }
     else {
+	    if (size < sizeof(zl)) {
+		    size = sizeof(zl);
+	    }
 	    unsigned long size_temp = size;
         while (size != 0) {
             // on cherche l'indice correspondant dans la tzl donc
@@ -113,6 +124,7 @@ mem_alloc(unsigned long size)
     if (zone_memoire == 0 || size == 0){
         return (void *)0;
     }
+    
     unsigned int size_index = tzl_index(size);
     
     // si la taille demandée est trop grande
@@ -120,6 +132,7 @@ mem_alloc(unsigned long size)
     if (!available_size(size_index, &first_index)){
         return (void *)0;
     }
+    
     // si on a une zone de la bonne taille disponible
     if (tzl[size_index] != NULL) {
         void * zone = tzl[size_index]->zone;
@@ -200,7 +213,7 @@ mem_free(void *ptr, unsigned long size)
 		//on essaie de libèrer une zone qui n'est pas dans la zone mémoire
 		return -1;
 	}
-	/* ecrire votre code ici */
+
 	//size_index est l'index correspondant à la taille à libérer
 	unsigned int size_index = tzl_index(size);
 
