@@ -126,6 +126,29 @@ int
 mem_free(void *ptr, unsigned long size)
 {
   /* ecrire votre code ici */
+	//size_index est l'index correspondant à la taille à libérer
+	unsigned int size_index = 0;
+	while (size != 0) {
+		size = size >> 1;
+		size_index++;
+	}
+
+        //Recherche du compagnon et de son état
+	void * buddy = ((ptr-zone_memoire)^size)+zone_memoire;
+	
+	bool free_buddy = false;
+	zl *cour = tzl[size_index];
+	while (cour != NULL && !free_buddy) {
+		if (cour->zone = buddy)
+			free_buddy = true;
+
+		cour = cour->next;
+	}
+
+	//Si le compagnon est libre: on les regroupe dans un bloc à size_index+1
+	
+	
+	
   return 0;
 }
 
@@ -134,7 +157,7 @@ int
 mem_destroy()
 {
   /* ecrire votre code ici */
-
+	
   free(zone_memoire);
   zone_memoire = 0;
   return 0;
