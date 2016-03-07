@@ -184,12 +184,10 @@ void merge_zone(unsigned int index, void *ptr) {
 	else {
 		zl * zone = tzl[index];
 		tzl[index] = (zl*)ptr;
-		printf("%i",index);
 		fflush(stdout);
 		tzl[index]->zone = ptr;
-		printf("OK");
 		fflush(stdout);
-		tzl[index]->next = zone;
+		tzl[index]->next = zone->next;
 	       
 	}
     }
@@ -205,24 +203,6 @@ mem_free(void *ptr, unsigned long size)
 	/* ecrire votre code ici */
 	//size_index est l'index correspondant à la taille à libérer
 	unsigned int size_index = tzl_index(size);
-
-
-        /* //Recherche du compagnon et de son état */
-	/* void * buddy = ((ptr-zone_memoire)^size)+zone_memoire; */
-	
-	/* bool free_buddy = false; */
-	/* zl *cour = tzl[size_index]; */
-	/* while (cour != NULL && !free_buddy) { */
-	/* 	if (cour->zone == buddy) */
-	/* 		free_buddy = true; */
-
-	/* 	cour = cour->next; */
-	/* } */
-
-	/* //Si le compagnon est libre: on les regroupe dans un bloc à size_index+1 */
-	/* if (tzl[size_index+1] == NULL) { */
-	/* 	tzl[size_index+1]=ptr; */
-	/* } */
 
 	if (tzl[size_index] == NULL) {
 		// si auncune zone libre de la taille souhaitée n'est disponible
