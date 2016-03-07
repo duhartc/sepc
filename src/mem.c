@@ -46,10 +46,11 @@ mem_init()
 }
 
 bool available_size(unsigned int index, unsigned int *first_index ) {
-    if (index > BUDDY_MAX_INDEX + 1) {
+    if (index > BUDDY_MAX_INDEX) {
         return false;
     }
     for (unsigned int i = index; i < BUDDY_MAX_INDEX + 1; i++) {
+    
         if (tzl[i]!= NULL) {
             // si on trouve une zone libre de taille supérieure disponible
             *first_index = i;
@@ -62,10 +63,10 @@ bool available_size(unsigned int index, unsigned int *first_index ) {
 void * divide_zone(unsigned int index, unsigned int first_index) {
     // index est la puissance correspondant à la taille que l'on souhaite allouer
     // first_index le premier index disponible pouvant la contenir   
-    if (index>=first_index) {            
+    if (index==first_index) {            
         void * zone = tzl[first_index]->zone;
         // on retire l'ex-zone libre de la tzl
-        //tzl[first_index] = tzl[first_index]->next;
+        tzl[first_index] = tzl[first_index]->next;
         return zone;
     }
     unsigned int index_new_zl = first_index - 1;
@@ -73,7 +74,7 @@ void * divide_zone(unsigned int index, unsigned int first_index) {
     void * cut_zone = (void *)((unsigned long)tzl[first_index]->zone 
                                +((unsigned long) 1 << (index_new_zl)));
 
-    // on insère en tête
+    // on insère en tête dans la liste
     tzl[index_new_zl] = cut_zone;
     tzl[index_new_zl]->zone = cut_zone;
     // si on crée la zone, c'est qu'il n'y en avait pas avant 
@@ -91,16 +92,22 @@ mem_alloc(unsigned long size)
         return NULL;
     }
     unsigned int size_index = 0;
-    while (size != 0) {
-        // on cherche l'indice correspondant dans la tzl donc
-        // on cherche le k le plus grand possible tel que size = 2^k + reste)
-        size = size >> 1;
-        size_index++;
+    if (size==ALLOC_MEM_SIZE) {
+        size_index = BUDDY_MAX_INDEX;
     }
-    // si la taille n'est pas une puissance de 2 (reste != 0)
-    // on la stocke dans un bloc de puissance de 2 supérieure 
-    if (size > ((unsigned long) 1 << size_index)) {
-        size_index++;
+    else {
+        while (size != 0) {
+            // on cherche l'indice correspondant dans la tzl donc
+            // on cherche le k le plus grand possible tel que size = 2^k + reste)
+            size = size >> 1;
+            size_index++;
+        }
+        size_index--;
+        // si la taille n'est pas une puissance de 2 (reste != 0)
+        // on la stocke dans un bloc de puissance de 2 supérieure 
+        if (size > ((unsigned long) 1 << size_index)) {
+            size_index++;
+        }
     }
     
     // si la taille demandée est trop grande
