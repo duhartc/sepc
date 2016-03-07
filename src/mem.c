@@ -136,6 +136,7 @@ mem_alloc(unsigned long size)
 bool buddy(void *ptr1, void * ptr2) {
     // retourne true si ptr1 et ptr2 sont des voisins
     //TODO
+    return false;
 }
 
 void merge_zone(unsigned int index, void *ptr) {
@@ -147,8 +148,8 @@ void merge_zone(unsigned int index, void *ptr) {
         tzl[index]->next = NULL;
     }
     else {
-        // sinon on essaie une zone libre plus grande
-        void *cour = tzl[index];
+        // sinon on essaie de créer une zone libre plus grande
+        zl *cour = tzl[index];
         bool merge = false;
         while (cour != NULL) {
             if (buddy(cour, ptr)) {
@@ -157,10 +158,11 @@ void merge_zone(unsigned int index, void *ptr) {
                 merge = true;
                 break;
             }
+            cour = cour->next;
         }
 
         // si on a trouvé un voisin
-        // on essaie de fusionner la nouvelle zone fusionnée
+        // on essaie de fusionner la nouvelle zone constituée des 2 voisins
         if (merge) merge_zone(index+1, ptr);
     }
 }
