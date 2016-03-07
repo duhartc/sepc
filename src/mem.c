@@ -133,7 +133,36 @@ mem_alloc(unsigned long size)
   return 0;  
 }
 
+bool buddy(void *ptr1, void * ptr2) {
+    // retourne true si ptr1 et ptr2 sont des voisins
+    //TODO
+}
+
 void merge_zone(unsigned int index, void *ptr) {
+    if (tzl[index] == NULL) {
+        // si auncune zone libre de la taille souhaitée n'est disponible
+        // on ajoute directement la zone libre
+        tzl[index] = ptr;
+        tzl[index]->zone = ptr;
+        tzl[index]->next = NULL;
+    }
+    else {
+        // sinon on essaie une zone libre plus grande
+        void *cour = tzl[index];
+        bool merge = false;
+        while (cour != NULL) {
+            if (buddy(cour, ptr)) {
+                // si une des zones disponibles est un voisin
+                //TODO
+                merge = true;
+                break;
+            }
+        }
+
+        // si on a trouvé un voisin
+        // on essaie de fusionner la nouvelle zone fusionnée
+        if (merge) merge_zone(index+1, ptr);
+    }
 }
 
 int 
